@@ -1,0 +1,9 @@
+---
+- name: Install fail2ban
+  yum:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+      - fail2ban
+
