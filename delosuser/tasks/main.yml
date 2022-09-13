@@ -1,0 +1,8 @@
+---
+- name: Delete standard user
+  user:
+    name: '{{ item }}'
+    state: absent
+    remove: true
+  with_items: '{{ os_users }}'
+
