@@ -1,0 +1,12 @@
+---
+- name: Install extra tools
+  yum:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+      - bash-completion
+      - fish
+      - git
+      - vim
+
