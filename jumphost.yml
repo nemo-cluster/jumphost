@@ -1,0 +1,20 @@
+---
+- hosts: localhost
+  gather_facts: yes
+  pre_tasks:
+    - name: Update all installed packages
+      yum:
+        name: '*'
+        update_cache: yes
+        state: latest
+      tags: always
+  roles:
+    - { role: epel-repo,     tags: always   }
+    - { role: usermgmt,      tags: always   }
+    - { role: sudo,          tags: always   }
+    - { role: autoupdate,    tags: update   }
+    - { role: delosuser,     tags: osuser   }
+    - { role: ssh,           tags: ssh      }
+    - { role: fail2ban,      tags: fail2ban }
+    - { role: extra-tools,   tags: extra    }
+
