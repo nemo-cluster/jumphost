@@ -68,12 +68,12 @@ First remove all dummy users `user1-4`.
 Since you are the admin, remove all dummy keys from admin user and add your key(s), e.g.:
 ```yaml
 users:
-- name: Admin           # do not change admin user (only name, if necessary)
+- name: Admin           # do not change admin user (only name and username, if necessary)
   username: admin       # login name, can be changed
   shell: /bin/bash      # defaults to /sbin/nologin, only admin should be able to login
   group: wheel          # sudo group (should only be used for admin user)
   state: present        # present creates, absent deletes user
-  # add one or more keys seperated with newline
+  # add one or more keys
   key:
     - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAB... joecool@home'
 
@@ -124,21 +124,49 @@ ansible-playbook --skip-tags osuser jumphost.yml   # skip deletion of OS user (r
 
 > **WARNING:** Please use a new terminal for the next steps, DO NOT LOG OUT!
 
-Check if the admin login works:
+Check if the `admin` login works:
 
 ```bash
 ssh 132.230.x.y -i ~/.ssh/id_rsa-jumphost -l admin
 ```
 
-Check if admin has sudo rights:
+Check if `admin` has sudo rights:
 ```bash
 sudo -i
 ```
 
 Check if you can use your standard user for the ssh jumphost:
 ```bash
-ssh 132.230.x.y -i ~/.ssh/id_rsa-jumphost -l <user>   # should not work
-ssh -J <user>@<jumphost> <finalhostuser>@<finalhost>  # should work
+ssh 132.230.x.y -i ~/.ssh/id_rsa-jumphost -l joecool   # should not work
+ssh -J joecool@132.230.x.y <finalhostuser>@<finalhost>  # should work
+```
+
+Setup is finished. Next steps should be set up a second jumphost and to add your jumphosts to your firewalls as single entry.
+
+### Configure your local SSH Client
+
+It is best to use multiple SSH keys and configure your SSH client for each host.
+
+Example:
+
+```ssh-config
+Host *
+    ServerAliveInterval 60
+Host jumphost*.subdom1.uni-freiburg.de
+    User joecool
+    IdentityFile ~/.ssh/id_rsa-jumphost
+Host login*.subdom1.uni-freiburg.de
+    User loginuser
+    ProxyJump jumphost1.subdom1.uni-freiburg.de
+    IdentityFile ~/.ssh/id_rsa-login
+Host server*.subdom1.uni-freiburg.de
+    User root
+    ProxyJump jumphost1.subdom1.uni-freiburg.de
+    IdentityFile ~/.ssh/id_rsa-server
+Host *
+    User defaultuser
+    IdentitiesOnly yes
+    IdentityFile ~/.ssh/id_rsa-default
 ```
 
 ## Ansible Roles
@@ -158,6 +186,8 @@ The playbook `jumphost.yml` has the following roles:
 
 For the user management to work you need to run at least the roles tagged with `core`.
 
+The playbook `jumphost.yml`  has an update function, which you can omit if you want. But usually it is not bad idea to update your packages quite often (see role [`autoupdate`](#autoupdate)).
+
 ### epel-repo
 
 Role installs the [Extra Packages for Enterprise Linux (EPEL)](https://docs.fedoraproject.org/en-US/epel/) repository. It is needed for Ansible. Should already be installed in an earlier step.
@@ -176,7 +206,7 @@ users:
   shell: /bin/bash      # defaults to /sbin/nologin, only admin should be able to login
   group: wheel          # sudo group (should only be used for admin user)
   state: present        # present creates, absent deletes user
-  # add one or more keys seperated with newline
+  # add one or more keys
   key:
     - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAB... user1-home'
     - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAB... user1-work'
@@ -242,4 +272,3 @@ This role installs some extra tools. You can add your own tools here. But you sh
 ### delosuser
 
 This role removes the standard user, which comes with many cloud images like almalinux, rocky or centos. Since you only want one user with `sudo` rights, remove this user. If the user is not found, nothing happens.
-
