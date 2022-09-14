@@ -19,3 +19,9 @@
     regexp: "^upgrade_type"
     line: "upgrade_type = {{ upgrade_type }}"
 
+- name: Start auto update service
+  service:
+    name: dnf-automatic.timer
+    state: started
+    enabled: yes
+
