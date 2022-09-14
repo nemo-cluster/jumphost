@@ -7,11 +7,11 @@
         name: '*'
         update_cache: yes
         state: latest
-      tags: always
+      tags: osupdate
   roles:
-    - { role: epel-repo,     tags: always   }
-    - { role: usermgmt,      tags: always   }
-    - { role: sudo,          tags: always   }
+    - { role: epel-repo,     tags: core     }
+    - { role: usermgmt,      tags: core     }
+    - { role: sudo,          tags: core     }
     - { role: autoupdate,    tags: update   }
     - { role: ssh,           tags: ssh      }
     - { role: fail2ban,      tags: fail2ban }
