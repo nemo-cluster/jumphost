@@ -8,5 +8,6 @@
       - bash-completion
       - fish
       - git
+      - htop
       - vim
 
