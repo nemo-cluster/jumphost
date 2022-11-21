@@ -4,16 +4,16 @@ This guide is for Alma- and RockyLinux 8 (or CentOS Stream 8).
 
 ## RockLinux 8 Installation on the bwCloud
 
-On the bwCloud you can create an instance based on RockyLinux 8. Select a small flavor, since this machine does not need mur RAM or disk, e.g. tiny with 1GB of RAM. You will need a IP which is accessible world-wide, e.g. `132.230.x.y`. You will probably need a good host name as well.
+In the bwCloud you can create an instance based on RockyLinux 8. Choose a small flavor, because this machine does not need much RAM or hard disk, e.g. flavor "tiny" with 1GB RAM. You will need an IP that can be reached worldwide, e.g. `132.230.x.y`. You also need an easy-to-remembe host name for the machine.
 
 Login to machine:
 ```bash
 ssh 132.230.x.y -i ~/.ssh/id_rsa-bwcloud -l rocky
 ```
 
-If you have installed the OS somewhere else, you can use this user for login.
+If you have installed the operating system itself in another location, you must use the user you created.
 
-You can already update all packages and reboot:
+As a first step, you should update all packages and reboot:
 ```bash
 sudo yum -y update
 sudo reboot
@@ -21,7 +21,7 @@ sudo reboot
 
 ### Install Ansible Packages
 
-After reboot install dependent packages.
+After reboot, install package dependencies.
 
 Login to machine:
 ```bash
@@ -40,17 +40,17 @@ sudo yum -y install ansible git
 
 ### Creating a User Management Template
 
-If you want to use Github, use this template.
+If you want to use Github for user and key management, use this template.
 https://github.com/nemo-cluster/jumphost
 
-Just click on "Use this template".
+Log in to your account and click the "Use this template" button.
 
-Open a new terminal and clone your new repo to your local desktop:
+Open a new terminal on your local desktop and clone the newly created repository:
 ```bash
 git clone https://github.com/<user>/<myrepo>
 ```
 
-If you do not want to use Github you, you can just clone the repo locally.
+If you don't want to use Github, you can simply clone the repository locally.
 
 Go to your local repository.
 Enter the `usermgmt` directory:
@@ -59,7 +59,7 @@ Enter the `usermgmt` directory:
 cd <myrepo>/usermgmt
 ```
 
-Edit users `vars/mail.yml`.
+Edit users in `vars/mail.yml`.
 
 First remove all dummy users `user1-4`.
 
@@ -84,7 +84,7 @@ users:
     - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAB... joecool@home'
 ```
 
-If you want you can already add the keys of your co-workers yourself, or they can do it themselves afterwards.
+If you want, you can already add the keys of your colleagues yourself, or they can do it themselves afterwards.
 
 Commit and push your initial changes.
 
@@ -96,7 +96,7 @@ On your jumphost become `root`:
 sudo -i
 ```
 
-Checkout your repository:
+Check out your repository on the jumphost:
 ```bash
 git clone https://github.com/<user>/<myrepo>
 ```
@@ -110,12 +110,12 @@ cd <myrepo>
 > Ansible changes sudo rights and removes standard OS user (rocky, almalinux, centos).
 > First, check if everything is OK!
 
-Run Ansible:
+Run full Ansible playbook:
 ```bash
 ansible-playbook jumphost.yml
 ```
 
-You can select roles or disable them:
+You can also select individual roles or disable them:
 
 ```bash
 ansible-playbook --tags update,ssh jumphost.yml
@@ -135,13 +135,13 @@ Check if `admin` has sudo rights:
 sudo -i
 ```
 
-Check if you can use your standard user for the ssh jumphost:
+Check if you can use your default user for the ssh jumphost (not admin):
 ```bash
 ssh 132.230.x.y -i ~/.ssh/id_rsa-jumphost -l joecool   # should not work
 ssh -J joecool@132.230.x.y <finalhostuser>@<finalhost>  # should work
 ```
 
-Setup is finished. Next steps should be set up a second jumphost and to add your jumphosts to your firewalls as single entry.
+The setup is complete. The next steps should be to set up a second jumphost and add your jumphosts as a single SSH entry to your firewalls.
 
 ### Configure your local SSH Client
 
@@ -184,13 +184,13 @@ The playbook `jumphost.yml` has the following roles:
     - { role: delosuser,     tags: osuser   }
 ```
 
-For the user management to work you need to run at least the roles tagged with `core`.
+For user management to work you must at least run the roles tagged with `core`.
 
-The playbook `jumphost.yml`  has an update function, which you can omit if you want. But usually it is not bad idea to update your packages quite often (see role [`autoupdate`](#autoupdate)).
+The playbook `jumphost.yml` has an update function that you can omit if you want. But usually it is not a bad idea to update the packages frequently (see role [`autoupdate`](#autoupdate)).
 
 ### epel-repo
 
-Role installs the [Extra Packages for Enterprise Linux (EPEL)](https://docs.fedoraproject.org/en-US/epel/) repository. It is needed for Ansible. Should already be installed in an earlier step.
+The role installs the [Extra Packages for Enterprise Linux (EPEL)](https://docs.fedoraproject.org/en-US/epel/) repository. It is required for Ansible and should have been installed in an earlier step.
 
 ### usermgmt
 
@@ -239,29 +239,29 @@ users:
 
 ### sudo
 
-Adds group in `sudo/vars/main.yml` to sudo file. Users in this group should be able to use `sudo`.
+Adds the group defined in `sudo/vars/main.yml` to the sudo file. Users in this group should be able to use `sudo`.
 
 > ***WARNING:*** ONLY ADD ADMIN USER TO THIS GROUP!
 
 ### autoupdate
 
-Enables auto update of the system. Since the host has only a minimal installation you can update all packages without any problems. If you want to make sure, that Ansible does not get updated and want only security updates to be installed automatically change `upgrade_type` to `security`.
+Enables the automatic update of the system. Since the host has minimal installation, you can upgrade all packages without any problems. If you want to ensure that Ansible is not upgraded and only security updates should be installed automatically, change `upgrade_type` to `security`.
 
 ### ssh
 
 This role does three things:
 
-* Enables `ClientAliveInterval`, so that your connection does not get lost if used with `sshuttle`.
+* Enables `ClientAliveInterval` so that the connection is not lost when used with `sshuttle` for example.
 * Disables `root` login: `PermitRootLogin no`
 * Disables SFTP connections: `Subsystem sftp`
 
 ### fail2ban
 
-Currently the role `fail2ban` only installs and starts `fail2ban`.
+Currently, the `fail2ban` role only installs and starts `fail2ban`.
 
 ### extra-tools
 
-This role installs some extra tools. You can add your own tools here. But you shouldn't install to many tools, since you should use this host only as a jump host. In the time of writing the following tools are installed:
+This role installs some additional tools. You can add your own tools here. However, you should not install too many tools as you should only use this host as a jump host. At the time of writing, the following tools are installed:
 
 * bash-completion
 * fish
@@ -270,5 +270,4 @@ This role installs some extra tools. You can add your own tools here. But you sh
 * vim
 
 ### delosuser
-
-This role removes the standard user, which comes with many cloud images like almalinux, rocky or centos. Since you only want one user with `sudo` rights, remove this user. If the user is not found, nothing happens.
+This role removes the default user that comes with many cloud images such as almalinux, rocky, or centos. Since you want to have only one user with `sudo` privileges, remove this user. If the user is not found, nothing happens.
