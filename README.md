@@ -43,7 +43,7 @@ sudo yum -y install ansible git
 If you want to use Github for user and key management, use this template.
 https://github.com/nemo-cluster/jumphost
 
-Log in to your account and click the "Use this template" button.
+Log in to your account and click the "Use this template" button. On Github, you can create a private repository. If you need access to your repository from your jumphosts, simply add your public keys from the machines to the repository's deploy keys. Go to your repository and select "Settings -> Deploy keys -> Add deploy key". Do **NOT** check the "Allow write accesss" option for your jumphosts!
 
 Open a new terminal on your local desktop and clone the newly created repository:
 ```bash
