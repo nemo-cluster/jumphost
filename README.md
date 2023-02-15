@@ -1,10 +1,12 @@
 # Installing a Jumphost
 
-This guide is for Alma- and RockyLinux 8 (or CentOS Stream 8).
+This guide is for Alma- and RockyLinux 8 or 9 (or CentOS Stream 8). We recommend using Alma- or RockyLinux 9.1 because it ships with OpenSSH 8.7p1, which supports FIDO2 secure SSH keys. See the NEMO Yubikey documentation for setting up [FIDO2 SSH keys](https://github.com/nemo-cluster/yubikey#ssh-and-yubikeys).
 
-## RockLinux 8 Installation on the bwCloud
+The configuration of user administration was partly copied from Manuel M., the SSH configuration was obtained from Bernd W.
 
-In the bwCloud you can create an instance based on RockyLinux 8. Choose a small flavor, because this machine does not need much RAM or hard disk, e.g. flavor "tiny" with 1GB RAM. You will need an IP that can be reached worldwide, e.g. `132.230.x.y`. You also need an easy-to-remembe host name for the machine.
+## RockLinux 9 Installation (on the bwCloud)
+
+In the bwCloud you can create an instance based on RockyLinux 9. Choose a small flavor, because this machine does not need much RAM or hard disk, e.g. flavor "tiny" with 1GB RAM. You will need an IP that can be reached worldwide, e.g. `132.230.x.y`. You also need an easy-to-remembe host name for the machine.
 
 Login to machine:
 ```bash
@@ -168,6 +170,40 @@ Host *
     IdentitiesOnly yes
     IdentityFile ~/.ssh/id_rsa-default
 ```
+
+## Securing your SSH Keys with FIDO2
+
+For admin access on the jumphosts, it is advisable to use FIDO2-secured SSH keys. For standard users, this can be used if you want to ensure that an attacker who has infected your local machine cannot access your nodes and servers.
+
+For information on setting up SSH keys, see the NEMO Yubikey SSH FIDO2 [documentation](https://github.com/nemo-cluster/yubikey#ssh-and-yubikeys).
+
+To secure the administrator by using FIDO2 SSH keys, only `ed25519-sk` or `ecdsa-sk` keys may be used. In our tests, we did not need to append any options to `sshd_config` or the local `ssh_config`. `sk` stands for security key.
+
+Example for admin users:
+```yaml
+users:
+- name: Admin           # do not change admin user (only name and username, if necessary)
+  username: admin       # login name, can be changed
+  shell: /bin/bash      # defaults to /sbin/nologin, only admin should be able to login
+  group: wheel          # sudo group (should only be used for admin user)
+  state: present        # present creates, absent deletes user
+  # add one or more keys
+  key:
+    - 'sk-ssh-ed25519@openssh.com AAAAGnNrLXN... joecool@home'
+```
+
+If you want to make sure that only FIDO2-secured SSH keys can use the jumphost, you can use them for the standard users as well.
+
+Example:
+```yaml
+- name: Joe Cool
+  username: joecool
+  state: present
+  key:
+    - 'sk-ssh-ed25519@openssh.com AAAAGnNrLXN... joecool@home'
+```
+
+If you want to use only FIDO2 keys, you should set the `PubkeyAcceptedAlgorithms` option to `sk-ssh-ed25519@openssh.com` (see `ssh -Q PubkeyAcceptedAlgorithms` for supported algorithms). This should restrict access to FIDO2 keys only.
 
 ## Ansible Roles
 
