@@ -1,33 +1,33 @@
 # Installing a Jumphost
 
-This guide is for Alma- and RockyLinux 8 or 9 (or CentOS Stream 8). We recommend using Alma- or RockyLinux 9.1 because it ships with OpenSSH 8.7p1, which supports FIDO2 secure SSH keys. See the NEMO Yubikey documentation for setting up [FIDO2 SSH keys](https://github.com/nemo-cluster/yubikey#ssh-and-yubikeys).
+This guide is for Alma- and RockyLinux 8 or 9 (or CentOS Stream). We recommend using Alma- or RockyLinux 9.1 because it ships with OpenSSH 8.7p1, which supports FIDO2 secure SSH keys. See the NEMO Yubikey documentation for setting up [FIDO2 SSH keys](https://github.com/nemo-cluster/yubikey#ssh-and-yubikeys).
 
 The configuration of user administration was partly copied from Manuel M., the SSH configuration was obtained from Bernd W.
 
-## RockLinux 9 Installation (on the bwCloud)
+## Expample Host: RockLinux 9 Installation (bwCloud)
 
-In the bwCloud you can create an instance based on RockyLinux 9. Choose a small flavor, because this machine does not need much RAM or hard disk, e.g. flavor "tiny" with 1GB RAM. You will need an IP that can be reached worldwide, e.g. `132.230.x.y`. You also need an easy-to-remembe host name for the machine.
+In bwCloud, you can create an instance based on RockyLinux 9. Choose a small flavor, because this machine does not need much RAM or hard disk, e.g. flavor "tiny" with 1GB RAM. You need an IP that can be reached worldwide, e.g. `132.230.x.y` for Uni Freiburg. You will also need an easy-to-remember host name for the machine. For this axample we will use jumphost1.subdom.uni-freiburg.de.
 
 Login to machine:
 ```bash
-ssh 132.230.x.y -i ~/.ssh/id_rsa-bwcloud -l rocky
+ssh jumphost1.subdom.uni-freiburg.de -i ~/.ssh/id_rsa-bwcloud -l rocky
 ```
 
-If you have installed the operating system itself in another location, you must use the user you created.
+Of course, if you have installed a different operating system in a different location, you must use the user you created.
 
-As a first step, you should update all packages and reboot:
+As a first step, you should update all packages and reboot (or as a last step):
 ```bash
 sudo yum -y update
 sudo reboot
 ```
 
-### Install Ansible Packages
+## Install Ansible Packages
 
-After reboot, install package dependencies.
+Install package dependencies.
 
 Login to machine:
 ```bash
-ssh 132.230.x.y -i ~/.ssh/id_rsa-bwcloud -l rocky
+ssh jumphost1.subdom.uni-freiburg.de -i ~/.ssh/id_rsa-bwcloud -l rocky
 ```
 
 Install `epel-release` for extra packages:
@@ -35,12 +35,12 @@ Install `epel-release` for extra packages:
 sudo yum -y install epel-release
 ```
 
-Install some dependencies:
+Install `git` and `ansible`:
 ```bash
 sudo yum -y install ansible git
 ```
 
-### Creating a User Management Template
+## Creating a User Management Template
 
 If you want to use Github for user and key management, use this template.
 https://github.com/nemo-cluster/jumphost
@@ -90,7 +90,7 @@ If you want, you can already add the keys of your colleagues yourself, or they c
 
 Commit and push your initial changes.
 
-### Configure your Jumphost
+## Configure your Jumphost
 
 On your jumphost become `root`:
 
@@ -118,7 +118,6 @@ ansible-playbook jumphost.yml
 ```
 
 You can also select individual roles or disable them:
-
 ```bash
 ansible-playbook --tags update,ssh jumphost.yml
 ansible-playbook --skip-tags osuser jumphost.yml   # skip deletion of OS user (rocky, almalinux, centos)
@@ -126,10 +125,9 @@ ansible-playbook --skip-tags osuser jumphost.yml   # skip deletion of OS user (r
 
 > **WARNING:** Please use a new terminal for the next steps, DO NOT LOG OUT!
 
-Check if the `admin` login works:
-
+Check if the `admin` login works, where `id_rsa-jumphost` is the admin SSH key:
 ```bash
-ssh 132.230.x.y -i ~/.ssh/id_rsa-jumphost -l admin
+ssh jumphost1.subdom.uni-freiburg.de -i ~/.ssh/id_rsa-jumphost -l admin
 ```
 
 Check if `admin` has sudo rights:
@@ -137,33 +135,33 @@ Check if `admin` has sudo rights:
 sudo -i
 ```
 
-Check if you can use your default user for the ssh jumphost (not admin):
+Check if you can use your "normal" user for the jumphost (not admin):
 ```bash
-ssh 132.230.x.y -i ~/.ssh/id_rsa-jumphost -l joecool   # should not work
-ssh -J joecool@132.230.x.y <finalhostuser>@<finalhost>  # should work
+ssh jumphost1.subdom.uni-freiburg.de -i ~/.ssh/id_rsa-jumphost -l joecool    # should not work
+ssh -J joecool@jumphost1.subdom.uni-freiburg.de <finalhostuser>@<finalhost>  # should work, you may need to configure your SSH client first
 ```
 
-The setup is complete. The next steps should be to set up a second jumphost and add your jumphosts as a single SSH entry to your firewalls.
+The setup is complete. The next steps should be to set up a second jumphost and add the jumphosts to the firewalls.
 
-### Configure your local SSH Client
+## Configure your local SSH Client
 
-It is best to use multiple SSH keys and configure your SSH client for each host.
+t is best to use multiple SSH keys and configure your SSH client for each host. If you need to jump across two consecutive jumphosts, you can add to that directly in your configuration, e.g. `ProxyJump jumphost1.subdom.uni-freiburg.de,jumphost3.subdom.uni-freiburg.de`.
 
 Example:
 
 ```ssh-config
 Host *
     ServerAliveInterval 60
-Host jumphost*.subdom1.uni-freiburg.de
+Host jumphost*.subdom.uni-freiburg.de
     User joecool
     IdentityFile ~/.ssh/id_rsa-jumphost
-Host login*.subdom1.uni-freiburg.de
+Host login*.subdom.uni-freiburg.de
     User loginuser
-    ProxyJump jumphost1.subdom1.uni-freiburg.de
+    ProxyJump jumphost1.subdom.uni-freiburg.de
     IdentityFile ~/.ssh/id_rsa-login
-Host server*.subdom1.uni-freiburg.de
+Host server*.subdom.uni-freiburg.de
     User root
-    ProxyJump jumphost1.subdom1.uni-freiburg.de
+    ProxyJump jumphost1.subdom.uni-freiburg.de,jumphost3.subdom.uni-freiburg.de
     IdentityFile ~/.ssh/id_rsa-server
 Host *
     User defaultuser
@@ -226,7 +224,7 @@ The playbook `jumphost.yml` has an update function that you can omit if you want
 
 ### epel-repo
 
-The role installs the [Extra Packages for Enterprise Linux (EPEL)](https://docs.fedoraproject.org/en-US/epel/) repository. It is required for Ansible and should have been installed in an earlier step.
+The role installs the [Extra Packages for Enterprise Linux (EPEL)](https://docs.fedoraproject.org/en-US/epel/) repository. It is required for Ansible and should have been manually installed in an earlier step.
 
 ### usermgmt
 
@@ -293,7 +291,7 @@ This role does three things:
 
 ### fail2ban
 
-Currently, the `fail2ban` role only installs and starts `fail2ban`.
+Currently, the `fail2ban` role only installs, enables and starts `fail2ban`.
 
 ### extra-tools
 
@@ -306,4 +304,5 @@ This role installs some additional tools. You can add your own tools here. Howev
 * vim
 
 ### delosuser
+
 This role removes the default user that comes with many cloud images such as almalinux, rocky, or centos. Since you want to have only one user with `sudo` privileges, remove this user. If the user is not found, nothing happens.
