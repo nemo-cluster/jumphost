@@ -3,18 +3,23 @@
 - name: Disable root login
   lineinfile:
     dest: /etc/ssh/sshd_config
-    regexp: "^PermitRootLogin"
+    regexp: "^.*PermitRootLogin"
     line: "PermitRootLogin no"
+  notify:
+    - reload sshd
 
 - name: Enable keepalive
   lineinfile:
     dest: /etc/ssh/sshd_config
     regexp: ".*ClientAliveInterval"
     line: "ClientAliveInterval 60"
+  notify:
+    - reload sshd
 
 - name: Disable sftp subsystem
   lineinfile:
     dest: /etc/ssh/sshd_config
     regexp: ".*Subsystem.*sftp"
     line: "#Subsystem sftp  /usr/libexec/openssh/sftp-server"
-
+  notify:
+    - reload sshd
