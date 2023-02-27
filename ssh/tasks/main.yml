@@ -1,25 +1,61 @@
 ---
 
+- name: Find files in sshd_config.d
+  find:
+    paths: /etc/ssh/sshd_config.d/
+    file_type: file
+  register: configfiles
+      
 - name: Disable root login
-  lineinfile:
-    dest: /etc/ssh/sshd_config
-    regexp: "^.*PermitRootLogin"
-    line: "PermitRootLogin no"
+  replace:
+    path: /etc/ssh/sshd_config
+    regexp: '^#*\s*PermitRootLogin\s.*'
+    replace: 'PermitRootLogin no'
+  notify:
+    - reload sshd
+
+- name: Disable root login for files in sshd_config.d
+  replace:
+    path: "{{item.path}}"
+    regexp: '^#*\s*PermitRootLogin\s.*'
+    replace: 'PermitRootLogin no'
+  with_items:
+      - "{{configfiles.files}}"
   notify:
     - reload sshd
 
 - name: Enable keepalive
-  lineinfile:
+  replace:
     dest: /etc/ssh/sshd_config
-    regexp: ".*ClientAliveInterval"
-    line: "ClientAliveInterval 60"
+    regexp: '^#*\s*ClientAliveInterval\s.*'
+    replace: 'ClientAliveInterval 60'
+  notify:
+    - reload sshd
+
+- name: Enable keepalive for files in sshd_config.d
+  replace:
+    path: "{{item.path}}"
+    regexp: '^#*\s*ClientAliveInterval\s.*'
+    replace: 'ClientAliveInterval 60'
+  with_items:
+      - "{{configfiles.files}}"
   notify:
     - reload sshd
 
 - name: Disable sftp subsystem
-  lineinfile:
+  replace:
     dest: /etc/ssh/sshd_config
-    regexp: ".*Subsystem.*sftp"
-    line: "#Subsystem sftp  /usr/libexec/openssh/sftp-server"
+    regexp: '^#*\s*(Subsystem\s*sftp\s*.*)'
+    replace: '#\1'
+  notify:
+    - reload sshd
+
+- name: Disable sftp subsystem for files in sshd_config.d
+  replace:
+    path: "{{item.path}}"
+    regexp: '^#*\s*(Subsystem\s*sftp\s*.*)'
+    replace: '#\1'
+  with_items:
+      - "{{configfiles.files}}"
   notify:
     - reload sshd
