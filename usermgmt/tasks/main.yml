@@ -12,8 +12,6 @@
     state: '{{ item.state | default("present") }}'
     remove: true
     shell: '{{ item.shell | default("/sbin/nologin") }}'
-    groups: '{{ item.group | default("") }}'
-    append: true
   with_items: '{{ users }}'
   loop_control:
     label: '{{ item.username }}'
@@ -29,4 +27,3 @@
   when: ( item.state != "absent" )
   loop_control:
     label: '{{ item.username }}'
-

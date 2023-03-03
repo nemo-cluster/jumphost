@@ -3,4 +3,5 @@ os_users:
   - almalinux
   - centos
   - rocky
-
+  - debian
+  - ubuntu

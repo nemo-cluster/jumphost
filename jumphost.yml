@@ -1,20 +1,14 @@
 ---
 - hosts: localhost
   gather_facts: yes
-  pre_tasks:
-    - name: Update all installed packages
-      yum:
-        name: '*'
-        update_cache: yes
-        state: latest
-      tags: osupdate
   roles:
-    - { role: epel-repo,     tags: core     }
-    - { role: usermgmt,      tags: core     }
-    - { role: sudo,          tags: core     }
-    - { role: autoupdate,    tags: update   }
-    - { role: ssh,           tags: ssh      }
-    - { role: fail2ban,      tags: fail2ban }
-    - { role: extra-tools,   tags: extra    }
-    - { role: delosuser,     tags: osuser   }
-
+    - { role: epel-repo,          tags: [ "core", "epel-repo" ] }
+    - { role: osupdate,           tags: [ "core", "osupdate"  ] }
+    - { role: usermgmt,           tags: [ "core", "usermgmt"  ] }
+    - { role: sudo,               tags: [ "core", "sudo"      ] }
+    - { role: autoupdate-rhel,    tags: autoupdate,             when: ansible_os_family == "RedHat" }
+    - { role: autoupdate-debian,  tags: autoupdate,             when: ansible_os_family == "Debian" }
+    - { role: ssh,                tags: ssh                     }
+    - { role: fail2ban,           tags: fail2ban                }
+    - { role: extra-tools,        tags: extra-tools             }
+    - { role: delclouduser,       tags: delclouduser            }

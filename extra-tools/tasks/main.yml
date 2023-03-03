@@ -1,13 +1,14 @@
 ---
 - name: Install extra tools
   yum:
-    name: "{{ packages }}"
+    name: "{{ extra_tools }}"
     state: present
-  vars:
-    packages:
-      - bash-completion
-      - fish
-      - git
-      - htop
-      - vim
+  when:
+  - ansible_os_family == "RedHat"
 
+- name: Install extra tools
+  apt:
+    name: "{{ extra_tools }}"
+    state: present
+  when:
+  - ansible_os_family == "Debian"

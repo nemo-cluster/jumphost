@@ -1,3 +1,2 @@
 ---
-sudo: wheel     # sudo group
-
+sudo: admin     # sudo user

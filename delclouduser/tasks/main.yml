@@ -1,0 +1,21 @@
+---
+- name: Delete standard user
+  user:
+    name: '{{ item }}'
+    state: absent
+    remove: yes
+    force: yes
+  with_items: '{{ os_users }}'
+
+- name: Remove cloud users sudo file
+  ansible.builtin.file:
+    path: /etc/sudoers.d/90-cloud-init-users
+    state: absent
+
+- name: Delete default Cloud user from sudoers
+  replace:
+    path: /etc/sudoers
+    regexp: '^({{item}}\s.*)'
+    replace: '#\1'
+  with_items: '{{ os_users }}'
+

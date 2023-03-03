@@ -1,5 +1,4 @@
 ---
-
 - name: Find files in sshd_config.d
   find:
     paths: /etc/ssh/sshd_config.d/
