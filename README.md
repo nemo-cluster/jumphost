@@ -1,25 +1,21 @@
 # Installing a Jumphost
 
-This guide is for Alma- and RockyLinux 8 or 9 (or CentOS Stream). We recommend using Alma- or RockyLinux 9.1 because it ships with OpenSSH 8.7p1, which supports FIDO2 secure SSH keys. See the NEMO Yubikey documentation for setting up [FIDO2 SSH keys](https://github.com/nemo-cluster/yubikey#ssh-and-yubikeys).
+This guide is for AlmaLinux, RockyLinux, CentOS Stream, Ubuntu and Debain. The roles were tested with RockyLinux 8 and 9, Ubuntu 22.04 and Debain 11. We recommend using Alma- or RockyLinux 9, Ubuntu 22.04 and Debain 11 or above because they ship with OpenSSH 8.4 and newer, which supports FIDO2 secure SSH keys. See the NEMO Yubikey documentation for setting up [FIDO2 SSH keys](https://github.com/nemo-cluster/yubikey#ssh-and-yubikeys).
 
 The configuration of user administration was partly copied from Manuel M., the SSH configuration was obtained from Bernd W.
 
-## Expample Host: RockLinux 9 Installation (bwCloud)
+## Example for Alma-, RockLinux 9, Ubuntu 22.04 and Debian 11 (bwCloud)
 
-In bwCloud, you can create an instance based on RockyLinux 9. Choose a small flavor, because this machine does not need much RAM or hard disk, e.g. flavor "tiny" with 1GB RAM. You need an IP that can be reached worldwide, e.g. `132.230.x.y` for Uni Freiburg. You will also need an easy-to-remember host name for the machine. For this axample we will use jumphost1.subdom.uni-freiburg.de.
+In bwCloud, you can create an instance based on RockyLinux 9, Ubuntu 22.04 and Debain 11. Choose a small flavor, because this machine does not need much RAM or hard disk, e.g. flavor "tiny" with 1GB RAM. You need an IP that can be reached worldwide, e.g. `132.230.x.y` for Uni Freiburg. You will also need an easy-to-remember host name for the machine. For this axample we will use jumphost1.subdom.uni-freiburg.de.
 
 Login to machine:
 ```bash
-ssh jumphost1.subdom.uni-freiburg.de -i ~/.ssh/id_rsa-bwcloud -l rocky
+ssh jumphost1.subdom.uni-freiburg.de -i ~/.ssh/id_rsa-bwcloud -l rocky   # or almalinux, ubuntu, debian
 ```
 
 Of course, if you have installed a different operating system in a different location, you must use the user you created.
 
-As a first step, you should update all packages and reboot (or as a last step):
-```bash
-sudo yum -y update
-sudo reboot
-```
+You can update and reboot your operating system if you want, but the Ansible role `osupdate` will do an update for you.
 
 ## Install Ansible Packages
 
@@ -27,16 +23,18 @@ Install package dependencies.
 
 Login to machine:
 ```bash
-ssh jumphost1.subdom.uni-freiburg.de -i ~/.ssh/id_rsa-bwcloud -l rocky
+ssh jumphost1.subdom.uni-freiburg.de -i ~/.ssh/id_rsa-bwcloud -l rocky   # or almalinux, ubuntu, debian
 ```
 
-Install `epel-release` for extra packages:
+For Alma- and RockLinux, install `epel-release` for additional packages, then `git` and `ansible`: 
+```bash
+sudo apt update
+sudo apt install ansible git
+```
+
+For Ubuntu and Debian, update the package repository, then install `git` and `ansible`:
 ```bash
 sudo yum -y install epel-release
-```
-
-Install `git` and `ansible`:
-```bash
 sudo yum -y install ansible git
 ```
 
@@ -93,7 +91,6 @@ Commit and push your initial changes.
 ## Configure your Jumphost
 
 On your jumphost become `root`:
-
 ```bash
 sudo -i
 ```
@@ -109,7 +106,7 @@ cd <myrepo>
 ```
 
 > **WARNING:** DO NOT LOG OUT AFTER ANSIBLE PLAYBOOK!
-> Ansible changes sudo rights and removes standard OS user (rocky, almalinux, centos).
+> Ansible changes sudo rights and removes standard cloud OS user (rocky, almalinux, centos, debian, ubuntu).
 > First, check if everything is OK!
 
 Run full Ansible playbook:
@@ -119,8 +116,8 @@ ansible-playbook jumphost.yml
 
 You can also select individual roles or disable them:
 ```bash
-ansible-playbook --tags update,ssh jumphost.yml
-ansible-playbook --skip-tags osuser jumphost.yml   # skip deletion of OS user (rocky, almalinux, centos)
+ansible-playbook --tags usermgmt,ssh jumphost.yml
+ansible-playbook --skip-tags delclouduser jumphost.yml   # skip deletion of OS user (rocky, almalinux, centos, debian, ubuntu)
 ```
 
 > **WARNING:** Please use a new terminal for the next steps, DO NOT LOG OUT!
@@ -183,7 +180,6 @@ users:
 - name: Admin           # do not change admin user (only name and username, if necessary)
   username: admin       # login name, can be changed
   shell: /bin/bash      # defaults to /sbin/nologin, only admin should be able to login
-  group: wheel          # sudo group (should only be used for admin user)
   state: present        # present creates, absent deletes user
   # add one or more keys
   key:
@@ -208,14 +204,16 @@ If you want to use only FIDO2 keys, you should set the `PubkeyAcceptedAlgorithms
 The playbook `jumphost.yml` has the following roles:
 
 ```yaml
-    - { role: epel-repo,     tags: core     }
-    - { role: usermgmt,      tags: core     }
-    - { role: sudo,          tags: core     }
-    - { role: autoupdate,    tags: update   }
-    - { role: ssh,           tags: ssh      }
-    - { role: fail2ban,      tags: fail2ban }
-    - { role: extra-tools,   tags: extra    }
-    - { role: delosuser,     tags: osuser   }
+    - { role: epel-repo,          tags: [ "core", "epel-repo" ] }
+    - { role: osupdate,           tags: [ "core", "osupdate"  ] }
+    - { role: usermgmt,           tags: [ "core", "usermgmt"  ] }
+    - { role: sudo,               tags: [ "core", "sudo"      ] }
+    - { role: autoupdate-rhel,    tags: autoupdate,             when: ansible_os_family == "RedHat" }
+    - { role: autoupdate-debian,  tags: autoupdate,             when: ansible_os_family == "Debian" }
+    - { role: ssh,                tags: ssh                     }
+    - { role: fail2ban,           tags: fail2ban                }
+    - { role: extra-tools,        tags: extra-tools             }
+    - { role: delclouduser,       tags: delclouduser            }
 ```
 
 For user management to work you must at least run the roles tagged with `core`.
@@ -225,6 +223,10 @@ The playbook `jumphost.yml` has an update function that you can omit if you want
 ### epel-repo
 
 The role installs the [Extra Packages for Enterprise Linux (EPEL)](https://docs.fedoraproject.org/en-US/epel/) repository. It is required for Ansible and should have been manually installed in an earlier step.
+
+### osupdate
+
+Updates system packages (`yum update` or `apt upgrade`).
 
 ### usermgmt
 
@@ -238,7 +240,6 @@ users:
 - name: Admin           # do not change admin user (only name, if necessary)
   username: admin       # login name, can be changed
   shell: /bin/bash      # defaults to /sbin/nologin, only admin should be able to login
-  group: wheel          # sudo group (should only be used for admin user)
   state: present        # present creates, absent deletes user
   # add one or more keys
   key:
@@ -273,13 +274,13 @@ users:
 
 ### sudo
 
-Adds the group defined in `sudo/vars/main.yml` to the sudo file. Users in this group should be able to use `sudo`.
+Adds the user defined in `sudo/vars/main.yml` to the sudo file. This user should be able to use `sudo`.
 
-> ***WARNING:*** ONLY ADD ADMIN USER TO THIS GROUP!
+> ***WARNING:*** ONLY ADD ADMIN USER TO SUDOERS!
 
-### autoupdate
+### autoupdate (RHEL/Debian)
 
-Enables the automatic update of the system. Since the host has minimal installation, you can upgrade all packages without any problems. If you want to ensure that Ansible is not upgraded and only security updates should be installed automatically, change `upgrade_type` to `security`.
+Enables the automatic update of the system. Since the host has minimal installation, you can upgrade all packages without any problems. ONLY FOR ALMA AND ROCKY: If you want to ensure that Ansible is not upgraded and only security updates should be installed automatically, change `upgrade_type` to `security`.
 
 ### ssh
 
@@ -297,12 +298,13 @@ Currently, the `fail2ban` role only installs, enables and starts `fail2ban`.
 
 This role installs some additional tools. You can add your own tools here. However, you should not install too many tools as you should only use this host as a jump host. At the time of writing, the following tools are installed:
 
+* ansible
 * bash-completion
 * fish
 * git
 * htop
 * vim
 
-### delosuser
+### delclouduser
 
-This role removes the default user that comes with many cloud images such as almalinux, rocky, or centos. Since you want to have only one user with `sudo` privileges, remove this user. If the user is not found, nothing happens.
+This role removes the default user that comes with many cloud images such as almalinux, rocky, centos, debian and ubuntu. Since you want to have only one user with `sudo` privileges, remove this user. If the user is not found, nothing happens.
