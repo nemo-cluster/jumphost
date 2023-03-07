@@ -40,7 +40,7 @@ sudo yum -y install ansible git
 
 ### Raspberry Pi OS Configuration
 
-For Raspberry Pi OS, you can use the notes for Debian. When you create the image, create a user and enable the SSH key login. It is recommended to create a user named "debian". This is automatically removed by the Ansible role "delclouduser". See pictures below for instructions.
+For Raspberry Pi OS, you can use the notes for Debian. You should use at least a newer Raspberry Pi with 64-bit operating system, preferably Raspberry Pi OS Lite. When you create the image, create a user and enable the SSH key login. It is recommended to create a user named "debian". This is automatically removed by the Ansible role "delclouduser". See pictures below for instructions.
 
 <img src=".img/pi1.png" width=45%><img src=".img/pi2.png" width=45%>
 
