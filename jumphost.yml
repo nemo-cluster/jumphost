@@ -12,3 +12,4 @@
     - { role: fail2ban,           tags: fail2ban                }
     - { role: extra-tools,        tags: extra-tools             }
     - { role: delclouduser,       tags: delclouduser            }
+    - { role: cron,               tags: [ "never", "cron"     ] }
