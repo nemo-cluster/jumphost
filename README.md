@@ -150,7 +150,7 @@ The setup is complete. The next steps should be to set up a second jumphost and 
 
 ## Configure your local SSH Client
 
-t is best to use multiple SSH keys and configure your SSH client for each host. If you need to jump across two consecutive jumphosts, you can add to that directly in your configuration, e.g. `ProxyJump jumphost1.subdom.uni-freiburg.de,jumphost3.subdom.uni-freiburg.de`.
+It is best to use multiple SSH keys and configure your SSH client for each host. If you need to jump across two consecutive jumphosts, you can add to that directly in your configuration, e.g. `ProxyJump jumphost1.subdom.uni-freiburg.de,jumphost3.subdom.uni-freiburg.de`.
 
 Example:
 
@@ -207,6 +207,36 @@ Example:
 
 If you want to use only FIDO2 keys, you should set the `PubkeyAcceptedAlgorithms` option to `sk-ssh-ed25519@openssh.com` (see `ssh -Q PubkeyAcceptedAlgorithms` for supported algorithms). This should restrict access to FIDO2 keys only.
 
+## Automatic SSH Key Update on the Jumphost
+
+If you want to update the users' SSH keys automatically through a cron job, you can use the "cron" role. This role is not invoked automatically, so you need to specify the "cron" tag manually.
+
+First, you need to change the Git repository from which you want to pull the Ansible roles. If you want to change the frequency of the cron job, you can also change these variables:
+
+Modify `cron/vars/main.yml`, "*/15" means every 15 minutes, see cron help for more information:
+```yml
+---
+git: "git@github.com:<user>/<jumphost>.git"
+day: "*"
+hour: "*"
+minute: "*/15"  
+```
+
+After you have changed the variables, run the playbook with the tag "cron":
+```bash
+ansible-playbook jumphost.yml -t cron
+```
+
+This will create a shell script in `/usr/local/bin/user_update_ssh_keys.sh` and create a crontab entry. To verify the entry, run `crontab -l`:
+```bash
+#Ansible: user management update
+*/15 * * * * /usr/local/bin/user_update_ssh_keys.sh
+```
+
+## Final Tests and Reboot
+
+Test the jumphost (see [Configure your Jumphost](https://github.com/nemo-cluster/jumphost#configure-your-jumphost)) and reboot the machine if you have not already updated and rebooted it in an earlier step. The setup is complete.
+
 ## Ansible Roles
 
 The playbook `jumphost.yml` has the following roles:
@@ -222,6 +252,7 @@ The playbook `jumphost.yml` has the following roles:
     - { role: fail2ban,           tags: fail2ban                }
     - { role: extra-tools,        tags: extra-tools             }
     - { role: delclouduser,       tags: delclouduser            }
+    - { role: cron,               tags: [ "never", "cron"     ] }
 ```
 
 For user management to work you must at least run the roles tagged with `core`.
@@ -316,3 +347,16 @@ This role installs some additional tools. You can add your own tools here. Howev
 ### delclouduser
 
 This role removes the default user that comes with many cloud images such as almalinux, rocky, centos, debian and ubuntu. Since you want to have only one user with `sudo` privileges, remove this user. If the user is not found, nothing happens.
+
+### cron
+
+This role updates the users' SSH keys automatically through a cron job. It creates a shell script in `/usr/local/bin/user_update_ssh_keys.sh` and a crontab entry. his role is not invoked automatically, so you need to specify the "cron" tag manually.
+
+You will need to to change the Git repository from which you want to pull the Ansible roles:
+```yml
+---
+git: "git@github.com:<user>/<jumphost>.git"
+day: "*"
+hour: "*"
+minute: "*/15"  
+```
