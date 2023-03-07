@@ -1,5 +1,5 @@
 ---
-git: "git@github.com:nemo-cluster/jumphost-kermit.git"
+git: "git@github.com:<user>/<jumphost>.git"
 day: "*"
 hour: "*"
 minute: "*/15"
