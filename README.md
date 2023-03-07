@@ -38,12 +38,20 @@ sudo yum -y install epel-release
 sudo yum -y install ansible git
 ```
 
-## Creating a User Management Template
+### Raspberry Pi OS Configuration
+
+For Raspberry Pi OS, you can use the notes for Debian. When you create the image, create a user and enable the SSH key login. It is recommended to create a user named "debian". This is automatically removed by the Ansible role "delclouduser". See pictures below for instructions.
+
+<img src=".img/pi1.png" width=45%><img src=".img/pi2.png" width=45%>
+
+## Using the User Management Template
 
 If you want to use Github for user and key management, use this template.
 https://github.com/nemo-cluster/jumphost
 
 Log in to your account and click the "Use this template" button. On Github, you can create a private repository. If you need access to your repository from your jumphosts, simply add your public keys from the machines to the repository's deploy keys. Go to your repository and select "Settings -> Deploy keys -> Add deploy key". Do **NOT** check the "Allow write accesss" option for your jumphosts!
+
+<img src=".img/deploy1.png" width=45%><img src=".img/deploy2.png" width=45%>
 
 Open a new terminal on your local desktop and clone the newly created repository:
 ```bash
