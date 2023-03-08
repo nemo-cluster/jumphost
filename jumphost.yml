@@ -3,7 +3,7 @@
   gather_facts: yes
   roles:
     - { role: epel-repo,          tags: [ "core", "epel-repo" ] }
-    - { role: osupdate,           tags: [ "core", "osupdate"  ] }
+    - { role: osupdate,           tags: [ "never", "osupdate" ] }
     - { role: usermgmt,           tags: [ "core", "usermgmt"  ] }
     - { role: sudo,               tags: [ "core", "sudo"      ] }
     - { role: autoupdate-rhel,    tags: autoupdate,             when: ansible_os_family == "RedHat" }
