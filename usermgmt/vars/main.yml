@@ -3,7 +3,6 @@ users:
 - name: Admin           # do not change admin user (only name, if necessary)
   username: admin       # login name, can be changed
   shell: /bin/bash      # defaults to /sbin/nologin, only admin should be able to login
-  group: wheel          # sudo group (should only be used for admin user)
   state: present        # present creates, absent deletes user
   # add one or more keys seperated with newline
   key:
