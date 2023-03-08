@@ -6,7 +6,7 @@ The configuration of user administration was partly copied from Manuel M., the S
 
 ## Example for Alma-, RockLinux 9, Ubuntu 22.04 and Debian 11 (bwCloud)
 
-In bwCloud, you can create an instance based on RockyLinux 9, Ubuntu 22.04 and Debain 11. Choose a small flavor, because this machine does not need much RAM or hard disk, e.g. flavor "tiny" with 1GB RAM. You need an IP that can be reached worldwide, e.g. `132.230.x.y` for Uni Freiburg. You will also need an easy-to-remember host name for the machine. For this axample we will use jumphost1.subdom.uni-freiburg.de.
+In bwCloud, you can create an instance based on RockyLinux 9, Ubuntu 22.04 and Debain 11. Choose a small flavor, because this machine does not need much RAM or hard disk, e.g. flavor "tiny" with 1GB RAM. You need an IP that can be reached worldwide, e.g. `132.230.x.y` for Uni Freiburg. You will also need an easy-to-remember host name for the machine. For this example we will use jumphost1.subdom.uni-freiburg.de.
 
 Login to machine:
 ```bash
@@ -15,7 +15,7 @@ ssh jumphost1.subdom.uni-freiburg.de -i ~/.ssh/id_rsa-bwcloud -l rocky   # or al
 
 Of course, if you have installed a different operating system in a different location, you must use the user you created.
 
-You can update and reboot your operating system if you want, but the Ansible role `osupdate` will do an update for you.
+You can update and reboot your operating system if you want, or you can use the Ansible role [`osupdate`](#osupdate).
 
 ## Install Ansible Packages
 
@@ -117,15 +117,17 @@ cd <myrepo>
 > Ansible changes sudo rights and removes standard cloud OS user (rocky, almalinux, centos, debian, ubuntu).
 > First, check if everything is OK!
 
-Run full Ansible playbook:
+Run Ansible playbook with standard roles:
 ```bash
 ansible-playbook jumphost.yml
 ```
 
-You can also select individual roles or disable them:
+You can also select individual roles or disable them, see [Ansible Roles](#ansible-roles) for details:
 ```bash
-ansible-playbook --tags usermgmt,ssh jumphost.yml
-ansible-playbook --skip-tags delclouduser jumphost.yml   # skip deletion of OS user (rocky, almalinux, centos, debian, ubuntu)
+ansible-playbook --tags main jumphost.yml                # run standard roles and role osupdate
+ansible-playbook --tags core jumphost.yml                # run only core roles
+ansible-playbook --tags usermgmt,ssh jumphost.yml        # run only usermgmt and ssh roles
+ansible-playbook --skip-tags delclouduser jumphost.yml   # run standard roles, but skip delclouduser role
 ```
 
 > **WARNING:** Please use a new terminal for the next steps, DO NOT LOG OUT!
@@ -235,29 +237,27 @@ This will create a shell script in `/usr/local/bin/user_update_ssh_keys.sh` and 
 
 ## Final Tests and Reboot
 
-Test the jumphost (see [Configure your Jumphost](https://github.com/nemo-cluster/jumphost#configure-your-jumphost)) and reboot the machine if you have not already updated and rebooted it in an earlier step. The setup is complete.
+Test the jumphost (see [Configure your Jumphost](#configure-your-jumphost)) and reboot the machine if you have not already updated and rebooted it in an earlier step. The setup is complete.
 
 ## Ansible Roles
 
 The playbook `jumphost.yml` has the following roles:
 
 ```yaml
-    - { role: epel-repo,          tags: [ "core", "epel-repo" ] }
-    - { role: osupdate,           tags: [ "core", "osupdate"  ] }
-    - { role: usermgmt,           tags: [ "core", "usermgmt"  ] }
-    - { role: sudo,               tags: [ "core", "sudo"      ] }
-    - { role: autoupdate-rhel,    tags: autoupdate,             when: ansible_os_family == "RedHat" }
-    - { role: autoupdate-debian,  tags: autoupdate,             when: ansible_os_family == "Debian" }
-    - { role: ssh,                tags: ssh                     }
-    - { role: fail2ban,           tags: fail2ban                }
-    - { role: extra-tools,        tags: extra-tools             }
-    - { role: delclouduser,       tags: delclouduser            }
-    - { role: cron,               tags: [ "never", "cron"     ] }
+    - { role: epel-repo,          tags: [ "main", "core", "epel-repo" ] }
+    - { role: osupdate,           tags: [ "main", "osupdate", "never" ] }
+    - { role: usermgmt,           tags: [ "main", "core", "usermgmt"  ] }
+    - { role: sudo,               tags: [ "main", "core", "sudo"      ] }
+    - { role: ssh,                tags: [ "main", "ssh"               ] }
+    - { role: autoupdate-rhel,    tags: [ "main", "autoupdate"        ], when: ansible_os_family == "RedHat" }
+    - { role: autoupdate-debian,  tags: [ "main", "autoupdate"        ], when: ansible_os_family == "Debian" }
+    - { role: fail2ban,           tags: [ "main", "fail2ban"          ] }
+    - { role: extra-tools,        tags: [ "main", "extra-tools"       ] }
+    - { role: delclouduser,       tags: [ "main", "delclouduser"      ] }
+    - { role: cron,               tags: [ "cron", "never"             ] }
 ```
 
-For user management to work you must at least run the roles tagged with `core`.
-
-The playbook `jumphost.yml` has an update function that you can omit if you want. But usually it is not a bad idea to update the packages frequently (see role [`autoupdate`](#autoupdate)).
+For user management to work, you must run at least the roles tagged "core". If you do not specify a tag, every role except those tagged "never" are executed. With the tag "main", the [`osupdate`](#osupdate) role is executed in addition to the default roles.
 
 ### epel-repo
 
@@ -265,7 +265,7 @@ The role installs the [Extra Packages for Enterprise Linux (EPEL)](https://docs.
 
 ### osupdate
 
-Updates system packages (`yum update` or `apt upgrade`).
+Updates system packages (`yum update` or `apt upgrade`). This role is executed when the tags "core" or "osupdate" are specified.
 
 ### usermgmt
 
@@ -317,10 +317,6 @@ Adds the user defined in `sudo/vars/main.yml` to the sudo file. This user should
 
 > ***WARNING:*** ONLY ADD ADMIN USER TO SUDOERS!
 
-### autoupdate (RHEL/Debian)
-
-Enables the automatic update of the system. Since the host has minimal installation, you can upgrade all packages without any problems. ONLY FOR ALMA AND ROCKY: If you want to ensure that Ansible is not upgraded and only security updates should be installed automatically, change `upgrade_type` to `security`.
-
 ### ssh
 
 This role does three things:
@@ -328,6 +324,10 @@ This role does three things:
 * Enables `ClientAliveInterval` so that the connection is not lost when used with `sshuttle` for example.
 * Disables `root` login: `PermitRootLogin no`
 * Disables SFTP connections: `Subsystem sftp`
+
+### autoupdate (RHEL/Debian)
+
+Enables the automatic update of the system. Since the host has minimal installation, you can upgrade all packages without any problems. ONLY FOR ALMA AND ROCKY: If you want to ensure that Ansible is not upgraded and only security updates should be installed automatically, change `upgrade_type` to `security`.
 
 ### fail2ban
 
