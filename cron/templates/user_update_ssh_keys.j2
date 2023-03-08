@@ -11,7 +11,7 @@ git clone --depth=1 {{ git }} $GITDIR
 cd $GITDIR
 # run user management role to update SSH keys
 if [ -e jumphost.yml ] && [ -e usermgmt/vars/main.yml ]; then
-    ansible-playbook -t usermgmt jumphost.yml 2>>/tmp/ansible.log
+    ANSIBLE_LOCALHOST_WARNING=false ansible-playbook -t usermgmt jumphost.yml 2>>/tmp/ansible.log
 fi
 # remove directory again
 rm -rf $GITDIR
